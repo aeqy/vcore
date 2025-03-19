@@ -1,0 +1,35 @@
+name: Qodana Code Quality
+
+on:
+  push:
+    branches:
+      - main  # 在推送到 main 分支时触发
+  pull_request:
+    branches:
+      - main  # 在对 main 分支发起 Pull Request 时触发
+
+jobs:
+  qodana:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取所有提交历史，以便 Qodana 可以进行增量分析
+
+      - name: Qodana Scan
+        uses: JetBrains/qodana-action@v2024.3
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }} # 强烈建议配置 Qodana Cloud Token
+
+      # 可选：上传 Qodana 报告作为 Artifact
+      - name: Upload Qodana report
+        uses: actions/upload-artifact@v4
+        with:
+          name: qodana-report
+          path: ${{ github.workspace }}/qodana/results # 假设使用了默认的 resultsDir
+          if-no-files-found: ignore
