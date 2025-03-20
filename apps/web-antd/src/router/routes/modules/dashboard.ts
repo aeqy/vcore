@@ -10,7 +10,7 @@ const routes: RouteRecordRaw[] = [
       title: $t('page.dashboard.title'),
     },
     name: 'Dashboard',
-    path: '/dashboard',
+    path: '/dashboard1',
     children: [
       {
         name: 'Analytics',

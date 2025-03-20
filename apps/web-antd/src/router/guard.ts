@@ -93,6 +93,12 @@ function setupAccessGuard(router: Router) {
     // 生成路由表
     // 当前登录用户拥有的角色标识列表
     const userInfo = userStore.userInfo || (await authStore.fetchUserInfo());
+    // 确保userInfo不为空，如果为空则使用默认值
+    if (!userInfo) {
+      console.warn('无法获取用户信息，将使用默认路径');
+      return DEFAULT_HOME_PATH;
+    }
+    
     const userRoles = userInfo.roles ?? [];
 
     // 生成菜单和路由
@@ -107,15 +113,40 @@ function setupAccessGuard(router: Router) {
     accessStore.setAccessMenus(accessibleMenus);
     accessStore.setAccessRoutes(accessibleRoutes);
     accessStore.setIsAccessChecked(true);
-    const redirectPath = (from.query.redirect ??
-      (to.path === DEFAULT_HOME_PATH
+    
+    // 解析重定向路径
+    let redirectPath = from.query.redirect as string;
+    if (!redirectPath) {
+      // 如果没有重定向参数，则使用目标路径或用户主页路径
+      redirectPath = to.path === DEFAULT_HOME_PATH
         ? userInfo.homePath || DEFAULT_HOME_PATH
-        : to.fullPath)) as string;
-
-    return {
-      ...router.resolve(decodeURIComponent(redirectPath)),
-      replace: true,
-    };
+        : to.fullPath;
+    }
+    
+    // 确保redirectPath是有效的字符串
+    if (typeof redirectPath === 'string' && redirectPath) {
+      // 解码重定向路径并返回重定向目标
+      const decodedPath = decodeURIComponent(redirectPath);
+      console.log('路由守卫重定向到:', decodedPath, '来源:', from.path, '目标:', to.path);
+      
+      try {
+        // 返回重定向目标
+        return {
+          path: decodedPath,
+          replace: true,
+        };
+      } catch (error) {
+        console.error('路由守卫重定向失败:', error);
+        // 失败时返回默认路径
+        return {
+          path: DEFAULT_HOME_PATH,
+          replace: true,
+        };
+      }
+    }
+    
+    // 默认返回当前目标路径
+    return to;
   });
 }
 
